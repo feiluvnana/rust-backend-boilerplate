@@ -168,29 +168,20 @@ impl {CamelName}Service {{
     }
 
     println!("Feature '{}' generated successfully!", feature_name);
-    println!("\nNext Steps:");
-    println!("1. Register routes in 'src/routes/mod.rs':");
     println!(
-        "   - Import the handler: 'use crate::features::{}::handler as {}_handler;'",
-        feature_name, feature_name
-    );
-    println!("   - Define routes in 'create_router':");
-    println!(
-        "     let {}_routes = Router::new().route(\"/\", post({}_handler::create));",
-        feature_name, feature_name
-    );
-    println!(
-        "     ... .nest(\"/api/{}\", {}_routes)",
-        kebab_case, feature_name
-    );
-    println!("2. Add the endpoints and DTOs to 'ApiDoc' in 'src/routes/mod.rs' for Swagger:");
-    println!(
-        "   - Add paths: 'crate::features::{}::handler::create'",
-        feature_name
-    );
-    println!(
-        "   - Add schemas: 'crate::features::{}::dto::Create{}Request', 'crate::features::{}::dto::{}Response'",
-        feature_name, camel_case, feature_name, camel_case
+        r#"
+Next Steps:
+1. Register routes in 'src/routes/mod.rs':
+   - Import the handler: 'use crate::features::{feature_name}::handler as {feature_name}_handler;'
+   - Define routes in 'create_router':
+     let {feature_name}_routes = Router::new().route("/", post({feature_name}_handler::create));
+     ... .nest("/api/{kebab_case}", {feature_name}_routes)
+2. Add the endpoints and DTOs to 'ApiDoc' in 'src/routes/swagger.rs' for Swagger:
+   - Add paths: 'crate::features::{feature_name}::handler::create'
+   - Add schemas: 'crate::features::{feature_name}::dto::Create{camel_case}Request', 'crate::features::{feature_name}::dto::{camel_case}Response'"#,
+        feature_name = feature_name,
+        kebab_case = kebab_case,
+        camel_case = camel_case
     );
 }
 

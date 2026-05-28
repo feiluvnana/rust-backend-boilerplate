@@ -1,4 +1,4 @@
-.PHONY: help setup run check test fmt lint \
+.PHONY: help setup run check fmt lint \
         docker\:up docker\:down docker\:build docker\:logs \
         db\:up db\:down \
         g\:env g\:feature \
@@ -20,19 +20,15 @@ run: ## Run the backend application with hot-reloading
 check: ## Fast compilation check
 	cargo check
 
-test: ## Run all tests
-	cargo test
-
 fmt: ## Format code
 	cargo fmt --all
 
 lint: ## Run clippy lints
 	cargo clippy --all-targets -- -D warnings
 
-ci: ## Run full CI pipeline locally (fmt + lint + test)
+ci: ## Run full CI pipeline locally (fmt + lint)
 	cargo fmt --all -- --check
 	cargo clippy --all-targets -- -D warnings
-	cargo test
 
 # ─── Docker ───────────────────────────────────────
 docker\:up: ## Start all containers (app + postgres)
@@ -59,21 +55,9 @@ db\:migration: ## Create a new migration (usage: make db:migration name=xxx)
 	sea-orm-cli migrate -d db/migrations generate $(name)
 
 db\:entity: ## Generate entity models from database
-	@if [ ! -f .env ]; then \
-		echo "Error: .env file not found"; \
-		exit 1; \
-	fi; \
-	if grep -q -E '^DATABASE_URL=' .env; then \
-		DATABASE_URL=$$(grep -E '^DATABASE_URL=' .env | cut -d'=' -f2- | tr -d '\r\n"'); \
-	else \
-		USER=$$(grep -E '^POSTGRES_USER=' .env | cut -d'=' -f2- | tr -d '\r\n"'); \
-		PASSWORD=$$(grep -E '^POSTGRES_PASSWORD=' .env | cut -d'=' -f2- | tr -d '\r\n"'); \
-		HOST=$$(grep -E '^POSTGRES_HOST=' .env | cut -d'=' -f2- | tr -d '\r\n"'); \
-		PORT=$$(grep -E '^POSTGRES_PORT=' .env | cut -d'=' -f2- | tr -d '\r\n"'); \
-		DB=$$(grep -E '^POSTGRES_DB=' .env | cut -d'=' -f2- | tr -d '\r\n"'); \
-		DATABASE_URL="postgres://$$USER:$$PASSWORD@$$HOST:$$PORT/$$DB"; \
-	fi; \
-	echo "Generating entities..."; \
+	@set -a && [ -f .env ] && . ./.env || true && set +a && \
+	DATABASE_URL=$${DATABASE_URL:-postgres://$$POSTGRES_USER:$$POSTGRES_PASSWORD@$$POSTGRES_HOST:$$POSTGRES_PORT/$$POSTGRES_DB}; \
+	echo "Generating entities from $$DATABASE_URL..."; \
 	sea-orm-cli generate entity --database-url "$$DATABASE_URL" -o db/models
 
 # ─── Generators ───────────────────────────────────

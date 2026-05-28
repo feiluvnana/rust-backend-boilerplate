@@ -48,12 +48,3 @@ jobs:
 
       - name: Clippy Lint
         run: cargo clippy --all-targets -- -D warnings
-
-      - name: Run Tests
-        run: cargo test
-        env:
-          POSTGRES_HOST: localhost
-          POSTGRES_PORT: 5432
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: backend_db

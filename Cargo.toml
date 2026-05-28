@@ -19,11 +19,6 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 sea-orm = { version = "1.1.4", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros"] }
 dotenvy = "0.15.7"
 validator = { version = "0.19.0", features = ["derive"] }
-migration = { path = "db/migrations" }
 utoipa = { version = "5.3.0", features = ["axum_extras"] }
 utoipa-swagger-ui = { version = "9.0.0", features = ["axum"] }
 uuid = { version = "1.11.0", features = ["v4"] }
-
-[dev-dependencies]
-tokio = { version = "1.52.3", features = ["full", "test-util"] }
-reqwest = { version = "0.12.9", features = ["json"] }

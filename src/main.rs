@@ -1,7 +1,3 @@
-use axum::http::HeaderValue;
-use tower_http::cors::{Any, CorsLayer};
-use tower_http::limit::RequestBodyLimitLayer;
-use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse};
 use tracing::info;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -22,10 +18,13 @@ async fn main() -> anyhow::Result<()> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    // Connect to Database & Run Migrations
-    let db = connect_db(&config.database_url, 100, 5).await?;
-    use migration::MigratorTrait;
-    migration::Migrator::up(&db, None).await?;
+    // Connect to Database
+    let db = connect_db(
+        &config.database_url,
+        config.db_max_connections,
+        config.db_min_connections,
+    )
+    .await?;
 
     // Create AppState
     let state = AppState {
@@ -33,28 +32,8 @@ async fn main() -> anyhow::Result<()> {
         config: config.clone(),
     };
 
-    let allowed_origin = config
-        .cors_origin
-        .parse::<HeaderValue>()
-        .unwrap_or_else(|_| HeaderValue::from_static("*"));
-
     // Setup routes and application layers
-    let app = create_router(state)
-        .layer(tower_http::catch_panic::CatchPanicLayer::new())
-        .layer(
-            tower_http::trace::TraceLayer::new_for_http()
-                .make_span_with(DefaultMakeSpan::new())
-                .on_request(DefaultOnRequest::new())
-                .on_response(DefaultOnResponse::new()),
-        )
-        .layer(tower_http::compression::CompressionLayer::new())
-        .layer(RequestBodyLimitLayer::new(2_097_152)) // 2MB Limit
-        .layer(
-            CorsLayer::new()
-                .allow_origin(allowed_origin)
-                .allow_methods(Any)
-                .allow_headers(Any),
-        );
+    let app = create_router(state);
 
     // Bind and serve with graceful shutdown
     let addr = format!("{}:{}", config.host, config.port);

@@ -61,8 +61,6 @@ Open **http://localhost:3000/swagger-ui** to explore the API.
 ├── src/
 │   ├── main.rs                 # Entry point: config → db → router → serve
 │   ├── lib.rs                  # Module re-exports
-│   ├── db/
-│   │   └── setup.rs            # Database connection with pooling
 │   ├── features/               # Business logic (handler + service + dto)
 │   │   └── health/             # Example feature: health checks
 │   │       └── handler.rs
@@ -77,11 +75,11 @@ Open **http://localhost:3000/swagger-ui** to explore the API.
 │       ├── mod.rs              # AppState + create_router()
 │       ├── health.rs           # Route definitions for /health
 │       └── swagger.rs          # OpenAPI spec (utoipa)
-├── migration/                  # SeaORM migration crate
-├── generator/                  # Feature scaffolding CLI
-├── examples/
-│   └── user_auth_reference/    # Full auth/user implementation for reference
-├── tests/                      # Integration tests
+├── db/
+│   ├── setup.rs                # Database connection with pooling
+│   ├── models/                 # Auto-generated database entities
+│   └── migrations/             # SeaORM migrations crate
+├── g/                          # Feature scaffolding CLI
 ├── Dockerfile                  # Multi-stage production build
 ├── docker-compose.yml          # App + PostgreSQL
 └── Makefile                    # Developer commands
@@ -129,12 +127,10 @@ In `src/routes/swagger.rs`, add your handler paths and DTO schemas to `ApiDoc`.
 
 ### Step 5 — Database (if needed)
 
-1. Create a migration: add a new file in `migration/src/`
-2. Register it in `migration/src/lib.rs`
-3. Create a SeaORM entity in `src/db/models/`
+1. Create a migration: `make db:migration name=xxx`
+2. Register it in `db/migrations/src/lib.rs`
+3. Create a SeaORM entity in `db/models/`
 4. Run `make db:up`
-
-> 💡 See `examples/user_auth_reference/` for a complete working example with auth, JWT, user CRUD, migrations, and tests.
 
 ## 📋 Commands
 
@@ -144,10 +140,9 @@ Run `make help` to see all available commands.
 |---|---|
 | `make run` | Start dev server with hot-reload |
 | `make check` | Fast compilation check |
-| `make test` | Run all tests |
 | `make fmt` | Format code |
 | `make lint` | Run Clippy with `-D warnings` |
-| `make ci` | Full CI pipeline (fmt → lint → test) |
+| `make ci` | Full CI pipeline (fmt → lint) |
 | `make db:up` | Run pending migrations |
 | `make db:down` | Rollback last migration |
 | `make g:env` | Generate `.env` from `.env.example` |
@@ -229,19 +224,6 @@ make docker:logs    # watch logs
 The Dockerfile uses a multi-stage build:
 1. **Build stage**: Compiles with `rust:alpine`, caches cargo registry and build artifacts
 2. **Runtime stage**: Copies only the binary to `alpine:3.18` (~30MB final image)
-
-## 📚 Reference Example
-
-The `examples/user_auth_reference/` directory contains a complete implementation of:
-
-- **User registration & login** with bcrypt password hashing
-- **JWT authentication** with token generation/verification
-- **`CurrentUser` extractor** for protected routes
-- **User CRUD** (get me, update me, list users, get by ID)
-- **Database migrations** (users table + role column)
-- **Integration tests** for auth and user endpoints
-
-Copy and adapt these files when building your own features.
 
 ## License
 

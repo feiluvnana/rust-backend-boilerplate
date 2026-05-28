@@ -31,39 +31,24 @@ pub struct ErrorResponse {
     pub details: Option<Vec<FieldError>>,
 }
 
+impl AppError {
+    fn status_and_code(&self) -> (StatusCode, &'static str) {
+        match self {
+            Self::BadRequest(_) => (StatusCode::BAD_REQUEST, "BAD_REQUEST"),
+            Self::Unauthorized(_) => (StatusCode::UNAUTHORIZED, "UNAUTHORIZED"),
+            Self::Forbidden(_) => (StatusCode::FORBIDDEN, "FORBIDDEN"),
+            Self::NotFound(_) => (StatusCode::NOT_FOUND, "NOT_FOUND"),
+            Self::Conflict(_) => (StatusCode::CONFLICT, "CONFLICT"),
+            Self::ValidationError(_) => (StatusCode::UNPROCESSABLE_ENTITY, "VALIDATION_FAILED"),
+            Self::Internal(_) => (StatusCode::INTERNAL_SERVER_ERROR, "INTERNAL_ERROR"),
+        }
+    }
+}
+
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
-        let (status, error_code, message, details) = match self {
-            AppError::BadRequest(msg) => {
-                tracing::warn!("Bad request error: {msg}");
-                (
-                    StatusCode::BAD_REQUEST,
-                    "BAD_REQUEST".to_string(),
-                    msg,
-                    None,
-                )
-            }
-            AppError::Unauthorized(msg) => {
-                tracing::warn!("Unauthorized error: {msg}");
-                (
-                    StatusCode::UNAUTHORIZED,
-                    "UNAUTHORIZED".to_string(),
-                    msg,
-                    None,
-                )
-            }
-            AppError::Forbidden(msg) => {
-                tracing::warn!("Forbidden error: {msg}");
-                (StatusCode::FORBIDDEN, "FORBIDDEN".to_string(), msg, None)
-            }
-            AppError::NotFound(msg) => {
-                tracing::warn!("Not found error: {msg}");
-                (StatusCode::NOT_FOUND, "NOT_FOUND".to_string(), msg, None)
-            }
-            AppError::Conflict(msg) => {
-                tracing::warn!("Conflict error: {msg}");
-                (StatusCode::CONFLICT, "CONFLICT".to_string(), msg, None)
-            }
+        let (status, error_code) = self.status_and_code();
+        let (message, details) = match self {
             AppError::ValidationError(errors) => {
                 tracing::warn!("Validation errors: {:?}", errors);
                 let field_errors = errors
@@ -73,36 +58,33 @@ impl IntoResponse for AppError {
                         field: field.to_string(),
                         message: errs
                             .iter()
-                            .map(|e| {
-                                e.message
-                                    .as_ref()
-                                    .map(|m| m.to_string())
-                                    .unwrap_or_else(|| "Invalid value".to_string())
-                            })
+                            .map(|e| e.message.as_deref().unwrap_or("Invalid value").to_string())
                             .collect::<Vec<_>>()
                             .join(", "),
                     })
                     .collect::<Vec<_>>();
-                (
-                    StatusCode::UNPROCESSABLE_ENTITY,
-                    "VALIDATION_FAILED".to_string(),
-                    "Validation failed".to_string(),
-                    Some(field_errors),
-                )
+                ("Validation failed".to_string(), Some(field_errors))
             }
             AppError::Internal(msg) => {
                 tracing::error!("Internal server error: {msg}");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "INTERNAL_ERROR".to_string(),
-                    "An unexpected error occurred".to_string(),
-                    None,
-                )
+                ("An unexpected error occurred".to_string(), None)
+            }
+            _ => {
+                let msg = match &self {
+                    AppError::BadRequest(m)
+                    | AppError::Unauthorized(m)
+                    | AppError::Forbidden(m)
+                    | AppError::NotFound(m)
+                    | AppError::Conflict(m) => m.clone(),
+                    _ => unreachable!(),
+                };
+                tracing::warn!("{error_code} error: {msg}");
+                (msg, None)
             }
         };
 
         let body = Json(ErrorResponse {
-            error_code,
+            error_code: error_code.to_string(),
             message,
             details,
         });
