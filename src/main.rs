@@ -1,16 +1,15 @@
 use axum::http::HeaderValue;
-use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse};
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::limit::RequestBodyLimitLayer;
+use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse};
 use tracing::info;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 use rust_backend_boilerplate::{
     db::setup::connect_db,
     infra::config::Config,
-    routes::{create_router, AppState},
+    routes::{AppState, create_router},
 };
-
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -32,7 +31,9 @@ async fn main() -> anyhow::Result<()> {
         config: config.clone(),
     };
 
-    let allowed_origin = config.cors_origin.parse::<HeaderValue>()
+    let allowed_origin = config
+        .cors_origin
+        .parse::<HeaderValue>()
         .unwrap_or_else(|_| HeaderValue::from_static("*"));
 
     // Setup routes and application layers
@@ -50,14 +51,14 @@ async fn main() -> anyhow::Result<()> {
             CorsLayer::new()
                 .allow_origin(allowed_origin)
                 .allow_methods(Any)
-                .allow_headers(Any)
+                .allow_headers(Any),
         );
 
     // Bind and serve with graceful shutdown
     let addr = format!("{}:{}", config.host, config.port);
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     info!("Listening on {}", listener.local_addr()?);
-    
+
     axum::serve(listener, app)
         .with_graceful_shutdown(async {
             tokio::signal::ctrl_c()

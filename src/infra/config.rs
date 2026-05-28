@@ -15,7 +15,8 @@ impl Config {
         dotenvy::dotenv().ok();
 
         let postgres_user = env::var("POSTGRES_USER").unwrap_or_else(|_| "postgres".to_string());
-        let postgres_password = env::var("POSTGRES_PASSWORD").unwrap_or_else(|_| "password".to_string());
+        let postgres_password =
+            env::var("POSTGRES_PASSWORD").unwrap_or_else(|_| "password".to_string());
         let postgres_db = env::var("POSTGRES_DB").unwrap_or_else(|_| "backend_db".to_string());
         let postgres_host = env::var("POSTGRES_HOST").unwrap_or_else(|_| "localhost".to_string());
         let postgres_port = env::var("POSTGRES_PORT")

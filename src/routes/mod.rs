@@ -1,21 +1,13 @@
-use axum::{
-    Router,
-    extract::FromRef,
-    middleware::from_fn,
-    http::HeaderValue,
-};
+use axum::{Router, extract::FromRef, http::HeaderValue, middleware::from_fn};
 use sea_orm::DatabaseConnection;
 use tower_http::set_header::SetResponseHeaderLayer;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-pub mod swagger;
 pub mod health;
+pub mod swagger;
 
-use crate::{
-    infra::config::Config,
-    middleware::request_id::request_id_middleware,
-};
+use crate::{infra::config::Config, middleware::request_id::request_id_middleware};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -53,7 +45,9 @@ pub fn create_router(state: AppState) -> Router {
         ));
 
     Router::new()
-        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", swagger::ApiDoc::openapi()))
+        .merge(
+            SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", swagger::ApiDoc::openapi()),
+        )
         .nest("/api", api_routes)
         .with_state(state)
 }

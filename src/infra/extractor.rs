@@ -1,6 +1,6 @@
 use axum::{
-    extract::{FromRequest, Request},
     Json,
+    extract::{FromRequest, Request},
 };
 use serde::de::DeserializeOwned;
 use validator::Validate;

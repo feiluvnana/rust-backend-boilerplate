@@ -114,9 +114,9 @@ impl IntoResponse for AppError {
 impl From<sea_orm::DbErr> for AppError {
     fn from(err: sea_orm::DbErr) -> Self {
         match &err {
-            sea_orm::DbErr::Query(sea_orm::RuntimeErr::SqlxError(sea_orm::sqlx::Error::Database(
-                db_err,
-            ))) => {
+            sea_orm::DbErr::Query(sea_orm::RuntimeErr::SqlxError(
+                sea_orm::sqlx::Error::Database(db_err),
+            )) => {
                 let code = db_err.code();
                 let code_ref = code.as_deref();
                 if code_ref == Some("23505") {

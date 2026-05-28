@@ -25,7 +25,10 @@ fn main() {
     let target_dir = Path::new(&target_dir_str);
 
     if target_dir.exists() {
-        eprintln!("Error: Directory '{}' already exists.", target_dir.display());
+        eprintln!(
+            "Error: Directory '{}' already exists.",
+            target_dir.display()
+        );
         std::process::exit(1);
     }
 
@@ -167,13 +170,28 @@ impl {CamelName}Service {{
     println!("Feature '{}' generated successfully!", feature_name);
     println!("\nNext Steps:");
     println!("1. Register routes in 'src/routes/mod.rs':");
-    println!("   - Import the handler: 'use crate::features::{}::handler as {}_handler;'", feature_name, feature_name);
+    println!(
+        "   - Import the handler: 'use crate::features::{}::handler as {}_handler;'",
+        feature_name, feature_name
+    );
     println!("   - Define routes in 'create_router':");
-    println!("     let {}_routes = Router::new().route(\"/\", post({}_handler::create));", feature_name, feature_name);
-    println!("     ... .nest(\"/api/{}\", {}_routes)", kebab_case, feature_name);
+    println!(
+        "     let {}_routes = Router::new().route(\"/\", post({}_handler::create));",
+        feature_name, feature_name
+    );
+    println!(
+        "     ... .nest(\"/api/{}\", {}_routes)",
+        kebab_case, feature_name
+    );
     println!("2. Add the endpoints and DTOs to 'ApiDoc' in 'src/routes/mod.rs' for Swagger:");
-    println!("   - Add paths: 'crate::features::{}::handler::create'", feature_name);
-    println!("   - Add schemas: 'crate::features::{}::dto::Create{}Request', 'crate::features::{}::dto::{}Response'", feature_name, camel_case, feature_name, camel_case);
+    println!(
+        "   - Add paths: 'crate::features::{}::handler::create'",
+        feature_name
+    );
+    println!(
+        "   - Add schemas: 'crate::features::{}::dto::Create{}Request', 'crate::features::{}::dto::{}Response'",
+        feature_name, camel_case, feature_name, camel_case
+    );
 }
 
 fn write_file(path: &Path, content: &str) -> std::io::Result<()> {

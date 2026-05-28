@@ -1,4 +1,4 @@
-use axum::{extract::State, Json, http::StatusCode};
+use axum::{Json, extract::State, http::StatusCode};
 use sea_orm::{ConnectionTrait, DatabaseConnection, Statement};
 use serde::Serialize;
 use utoipa::ToSchema;
@@ -36,9 +36,7 @@ pub async fn health() -> (StatusCode, Json<HealthStatus>) {
         (status = 503, description = "Service is unavailable", body = ErrorResponse)
     )
 )]
-pub async fn readiness(
-    State(db): State<DatabaseConnection>,
-) -> Result<StatusCode, AppError> {
+pub async fn readiness(State(db): State<DatabaseConnection>) -> Result<StatusCode, AppError> {
     db.execute(Statement::from_string(
         db.get_database_backend(),
         "SELECT 1".to_string(),
