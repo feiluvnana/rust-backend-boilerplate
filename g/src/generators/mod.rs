@@ -1,4 +1,4 @@
-pub mod feature;
-pub mod resource;
-pub mod middleware;
 pub mod extractor;
+pub mod feature;
+pub mod middleware;
+pub mod resource;

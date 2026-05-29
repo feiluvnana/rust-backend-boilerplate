@@ -13,7 +13,10 @@ pub fn generate(feature_name: &str) {
     let target_dir = Path::new(&target_dir_str);
 
     if target_dir.exists() {
-        eprintln!("Error: Directory '{}' already exists.", target_dir.display());
+        eprintln!(
+            "Error: Directory '{}' already exists.",
+            target_dir.display()
+        );
         std::process::exit(1);
     }
 
@@ -38,7 +41,6 @@ use validator::Validate;
 "#
     );
     let _ = write_file(&target_dir.join("dto.rs"), &dto_content);
-
 
     // Write handler.rs
     let handler_content = format!(
@@ -90,4 +92,3 @@ pub fn router() -> Router<AppState> {{
 
     println!("Feature '{}' generated successfully!", feature_name);
 }
-

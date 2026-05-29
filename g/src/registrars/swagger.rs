@@ -16,7 +16,10 @@ pub fn register_in_swagger(feature_name: &str, camel_case: &str) {
                 "\n        crate::features::{SnakeName}::handler::create,\n        crate::features::{SnakeName}::handler::list,\n        crate::features::{SnakeName}::handler::get_by_id,\n        crate::features::{SnakeName}::handler::update,\n        crate::features::{SnakeName}::handler::delete,",
                 SnakeName = feature_name
             );
-            if !content.contains(&format!("crate::features::{}::handler::create", feature_name)) {
+            if !content.contains(&format!(
+                "crate::features::{}::handler::create",
+                feature_name
+            )) {
                 content.insert_str(insert_pos, &new_paths);
             }
         }
@@ -30,7 +33,10 @@ pub fn register_in_swagger(feature_name: &str, camel_case: &str) {
                 SnakeName = feature_name,
                 CamelName = camel_case
             );
-            if !content.contains(&format!("crate::features::{}::dto::Create{}Request", feature_name, camel_case)) {
+            if !content.contains(&format!(
+                "crate::features::{}::dto::Create{}Request",
+                feature_name, camel_case
+            )) {
                 content.insert_str(insert_pos, &new_schemas);
             }
         }

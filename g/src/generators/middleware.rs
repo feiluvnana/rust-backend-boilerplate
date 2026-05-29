@@ -8,7 +8,10 @@ pub fn generate(name: &str) {
     let target_file = Path::new(&target_file_str);
 
     if target_file.exists() {
-        eprintln!("Error: Middleware file '{}' already exists.", target_file.display());
+        eprintln!(
+            "Error: Middleware file '{}' already exists.",
+            target_file.display()
+        );
         std::process::exit(1);
     }
 
