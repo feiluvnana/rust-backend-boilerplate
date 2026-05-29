@@ -29,85 +29,43 @@ pub fn generate(feature_name: &str) {
 
     // Write dto.rs
     let dto_content = format!(
-        r#"use serde::{{Deserialize, Serialize}};
+        r#"#[allow(unused_imports)]
+use serde::{{Deserialize, Serialize}};
+#[allow(unused_imports)]
 use utoipa::ToSchema;
+#[allow(unused_imports)]
 use validator::Validate;
-
-#[derive(Debug, Deserialize, Validate, ToSchema, Clone)]
-pub struct Create{Request}Request {{
-    #[validate(length(min = 1, message = "Name cannot be empty"))]
-    pub name: String,
-}}
-
-#[derive(Debug, Serialize, ToSchema, Clone)]
-pub struct {Response}Response {{
-    pub id: i32,
-    pub name: String,
-}}
-"#,
-        Request = camel_case,
-        Response = camel_case
+"#
     );
     let _ = write_file(&target_dir.join("dto.rs"), &dto_content);
 
+
     // Write handler.rs
     let handler_content = format!(
-        r#"use axum::{{Json, extract::State, http::StatusCode}};
+        r#"#[allow(unused_imports)]
+use axum::{{extract::State, http::StatusCode, Json}};
+#[allow(unused_imports)]
 use sea_orm::DatabaseConnection;
 
+#[allow(unused_imports)]
 use crate::{{
-    infra::error::{{AppError, ErrorResponse}},
-    extractors::ValidatedJson,
-    features::{FeatureName}::{{
-        dto::{{Create{CamelName}Request, {CamelName}Response}},
-        service::{CamelName}Service,
-    }},
+    infra::error::AppError,
+    features::{FeatureName}::service::{CamelName}Service,
 }};
-
-#[utoipa::path(
-    post,
-    path = "/api/{KebabName}",
-    request_body = Create{CamelName}Request,
-    responses(
-        (status = 201, description = "Created successfully", body = {CamelName}Response),
-        (status = 400, description = "Bad Request", body = ErrorResponse),
-        (status = 500, description = "Internal Server Error", body = ErrorResponse)
-    )
-)]
-pub async fn create(
-    State(db): State<DatabaseConnection>,
-    ValidatedJson(payload): ValidatedJson<Create{CamelName}Request>,
-) -> Result<(StatusCode, Json<{CamelName}Response>), AppError> {{
-    let result = {CamelName}Service::create_item(&db, &payload.name).await?;
-
-    Ok((
-        StatusCode::CREATED,
-        Json({CamelName}Response {{
-            id: result,
-            name: payload.name,
-        }}),
-    ))
-}}
 "#,
         FeatureName = feature_name,
-        CamelName = camel_case,
-        KebabName = kebab_case
+        CamelName = camel_case
     );
     let _ = write_file(&target_dir.join("handler.rs"), &handler_content);
 
     // Write service.rs
     let service_content = format!(
-        r#"use sea_orm::DatabaseConnection;
-use crate::infra::error::AppError;
+        r#"#[allow(unused_imports)]
+use sea_orm::DatabaseConnection;
 
 pub struct {CamelName}Service;
 
 impl {CamelName}Service {{
-    /// Example service method
-    pub async fn create_item(db: &DatabaseConnection, _name: &str) -> Result<i32, AppError> {{
-        // Implement database logic here
-        Ok(1)
-    }}
 }}
 "#,
         CamelName = camel_case
@@ -116,17 +74,12 @@ impl {CamelName}Service {{
 
     // Write router.rs
     let routes_content = format!(
-        r#"use axum::{{
-    routing::post,
-    Router,
-}};
+        r#"use axum::Router;
 
 use crate::routes::AppState;
-use super::handler as handler;
 
 pub fn router() -> Router<AppState> {{
     Router::new()
-        .route("/", post(handler::create))
 }}
 "#
     );
@@ -137,3 +90,4 @@ pub fn router() -> Router<AppState> {{
 
     println!("Feature '{}' generated successfully!", feature_name);
 }
+

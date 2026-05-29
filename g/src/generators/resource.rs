@@ -54,6 +54,7 @@ pub struct {CamelName}Response {{
     pub updated_at: chrono::DateTime<chrono::FixedOffset>,
 }}
 
+/*
 impl From<crate::db::models::{SnakeName}::Model> for {CamelName}Response {{
     fn from(model: crate::db::models::{SnakeName}::Model) -> Self {{
         Self {{
@@ -64,6 +65,7 @@ impl From<crate::db::models::{SnakeName}::Model> for {CamelName}Response {{
         }}
     }}
 }}
+*/
 "#,
         CamelName = camel_case,
         SnakeName = feature_name
@@ -72,74 +74,81 @@ impl From<crate::db::models::{SnakeName}::Model> for {CamelName}Response {{
 
     // Write service.rs
     let service_content = format!(
-        r#"use sea_orm::{{
-    ActiveModelTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryOrder, Set,
-}};
-use crate::{{
-    db::models::{SnakeName} as {SnakeName}_model,
+        r#"use crate::{{
+    features::{SnakeName}::dto::{{Create{CamelName}Request, Update{CamelName}Request, {CamelName}Response}},
     infra::error::AppError,
 }};
+use sea_orm::DatabaseConnection;
 
 pub struct {CamelName}Service;
 
 impl {CamelName}Service {{
     pub async fn create(
-        db: &DatabaseConnection,
-        name: &str,
-    ) -> Result<{SnakeName}_model::Model, AppError> {{
-        let active_model = {SnakeName}_model::ActiveModel {{
-            name: Set(name.to_owned()),
-            ..Default::default()
-        }};
-        let model = active_model.insert(db).await?;
-        Ok(model)
+        _db: &DatabaseConnection,
+        payload: Create{CamelName}Request,
+    ) -> Result<{CamelName}Response, AppError> {{
+        // TODO: Implement actual database logic using SeaORM
+        Ok({CamelName}Response {{
+            id: 1,
+            name: payload.name,
+            created_at: chrono::Utc::now().into(),
+            updated_at: chrono::Utc::now().into(),
+        }})
     }}
 
     pub async fn find_by_id(
-        db: &DatabaseConnection,
+        _db: &DatabaseConnection,
         id: i32,
-    ) -> Result<Option<{SnakeName}_model::Model>, AppError> {{
-        let model = {SnakeName}_model::Entity::find_by_id(id).one(db).await?;
-        Ok(model)
+    ) -> Result<Option<{CamelName}Response>, AppError> {{
+        // TODO: Implement actual database logic using SeaORM
+        Ok(Some({CamelName}Response {{
+            id,
+            name: "Placeholder".to_string(),
+            created_at: chrono::Utc::now().into(),
+            updated_at: chrono::Utc::now().into(),
+        }}))
     }}
 
-    pub async fn list(
-        db: &DatabaseConnection,
-        page: u64,
-        per_page: u64,
-    ) -> Result<(Vec<{SnakeName}_model::Model>, u64), AppError> {{
-        let paginator = {SnakeName}_model::Entity::find()
-            .order_by_desc({SnakeName}_model::Column::Id)
-            .paginate(db, per_page);
 
-        let total = paginator.num_items().await?;
-        let items = paginator.fetch_page(page - 1).await?;
-        Ok((items, total))
+    pub async fn list(
+        _db: &DatabaseConnection,
+        _page: u64,
+        _per_page: u64,
+    ) -> Result<(Vec<{CamelName}Response>, u64), AppError> {{
+        // TODO: Implement actual database logic using SeaORM
+        let items = vec![
+            {CamelName}Response {{
+                id: 1,
+                name: "Placeholder 1".to_string(),
+                created_at: chrono::Utc::now().into(),
+                updated_at: chrono::Utc::now().into(),
+            }},
+            {CamelName}Response {{
+                id: 2,
+                name: "Placeholder 2".to_string(),
+                created_at: chrono::Utc::now().into(),
+                updated_at: chrono::Utc::now().into(),
+            }},
+        ];
+        Ok((items, 2))
     }}
 
     pub async fn update(
-        db: &DatabaseConnection,
+        _db: &DatabaseConnection,
         id: i32,
-        name: &str,
-    ) -> Result<{SnakeName}_model::Model, AppError> {{
-        let model = {SnakeName}_model::Entity::find_by_id(id)
-            .one(db)
-            .await?
-            .ok_or_else(|| AppError::NotFound(format!("{{}} not found", "{CamelName}")))?;
-
-        let mut active_model: {SnakeName}_model::ActiveModel = model.into();
-        active_model.name = Set(name.to_owned());
-        active_model.updated_at = Set(chrono::DateTime::<chrono::FixedOffset>::from(chrono::Utc::now()));
-
-        let updated = active_model.update(db).await?;
-        Ok(updated)
+        payload: Update{CamelName}Request,
+    ) -> Result<{CamelName}Response, AppError> {{
+        // TODO: Implement actual database logic using SeaORM
+        Ok({CamelName}Response {{
+            id,
+            name: payload.name,
+            created_at: chrono::Utc::now().into(),
+            updated_at: chrono::Utc::now().into(),
+        }})
     }}
 
-    pub async fn delete(db: &DatabaseConnection, id: i32) -> Result<(), AppError> {{
-        let result = {SnakeName}_model::Entity::delete_by_id(id).exec(db).await?;
-        if result.rows_affected == 0 {{
-            return Err(AppError::NotFound(format!("{{}} not found", "{CamelName}")));
-        }}
+    pub async fn delete(_db: &DatabaseConnection, _id: i32) -> Result<(), AppError> {{
+        // TODO: Implement actual database logic using SeaORM
         Ok(())
     }}
 }}
@@ -185,8 +194,8 @@ pub async fn create(
     State(db): State<DatabaseConnection>,
     ValidatedJson(payload): ValidatedJson<Create{CamelName}Request>,
 ) -> Result<(StatusCode, Json<{CamelName}Response>), AppError> {{
-    let result = {CamelName}Service::create(&db, &payload.name).await?;
-    Ok((StatusCode::CREATED, Json({CamelName}Response::from(result))))
+    let result = {CamelName}Service::create(&db, payload).await?;
+    Ok((StatusCode::CREATED, Json(result)))
 }}
 
 #[utoipa::path(
@@ -205,10 +214,9 @@ pub async fn list(
     let page = params.page();
     let per_page = params.per_page();
     let (items, total) = {CamelName}Service::list(&db, page, per_page).await?;
-    let data = items.into_iter().map({CamelName}Response::from).collect();
     Ok((
         StatusCode::OK,
-        Json(PaginatedResponse::new(data, page, per_page, total)),
+        Json(PaginatedResponse::new(items, page, per_page, total)),
     ))
 }}
 
@@ -231,7 +239,7 @@ pub async fn get_by_id(
     let model = {CamelName}Service::find_by_id(&db, id)
         .await?
         .ok_or_else(|| AppError::NotFound(format!("{{}} not found", "{CamelName}")))?;
-    Ok((StatusCode::OK, Json({CamelName}Response::from(model))))
+    Ok((StatusCode::OK, Json(model)))
 }}
 
 #[utoipa::path(
@@ -253,8 +261,8 @@ pub async fn update(
     Path(id): Path<i32>,
     ValidatedJson(payload): ValidatedJson<Update{CamelName}Request>,
 ) -> Result<(StatusCode, Json<{CamelName}Response>), AppError> {{
-    let result = {CamelName}Service::update(&db, id, &payload.name).await?;
-    Ok((StatusCode::OK, Json({CamelName}Response::from(result))))
+    let result = {CamelName}Service::update(&db, id, payload).await?;
+    Ok((StatusCode::OK, Json(result)))
 }}
 
 #[utoipa::path(
@@ -313,3 +321,4 @@ pub fn router() -> Router<AppState> {{
 
     println!("Resource '{}' generated successfully!", feature_name);
 }
+

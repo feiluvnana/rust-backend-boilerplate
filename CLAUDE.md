@@ -38,10 +38,11 @@ This is a **Cargo workspace** with three members:
 ### Adding a New Feature, Resource, Middleware, or Extractor
 
 Use the generator:
-- **Full CRUD Resource**: `make g:resource name=my_resource` (or `cargo run -p g -- resource my_resource`)
-  This scaffolds a database-backed CRUD resource (DTOs, handlers, services, and routes) and automatically registers them in routing and Swagger.
-- **Simple Feature Placeholder**: `make g:feature name=my_feature` (or `cargo run -p g -- feature my_feature`)
-  This creates `src/features/my_feature/{mod.rs, dto.rs, handler.rs, service.rs, router.rs}` and automatically registers it in routing and the feature listing.
+- **Clean Resource**: `make g:resource name=my_resource` (or `cargo run -p g -- resource my_resource`)
+  This scaffolds a NestJS-like CRUD resource (with placeholder service returning mock DTO responses, CRUD handlers, and CRUD routes automatically registered in Swagger and routes).
+- **Clean Feature**: `make g:feature name=my_feature` (or `cargo run -p g -- feature my_feature`)
+  This creates `src/features/my_feature/{mod.rs, dto.rs, handler.rs, service.rs, router.rs}` as empty shells and automatically registers them in routes and the features mod.
+
 - **HTTP Middleware**: `make g:middleware name=my_middleware` (or `cargo run -p g -- middleware my_middleware`)
   This creates `src/middleware/my_middleware.rs` and registers it in `src/middleware/mod.rs`.
 - **Custom Extractor**: `make g:extractor name=my_extractor` (or `cargo run -p g -- extractor my_extractor`)

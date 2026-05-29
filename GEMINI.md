@@ -47,23 +47,24 @@ Cargo workspace with three members:
 
 ## How to Add a New Feature or Resource (step-by-step)
 
-### Method A: Scaffold a Full CRUD Resource (Recommended)
+### Method A: Scaffold a Clean Resource
 
-To generate a complete, database-backed CRUD resource (handlers, services, DTOs, routing, and automatic module/route/Swagger registration):
+To generate a NestJS-like CRUD resource (with placeholder service returning mock DTO responses, CRUD handlers, and CRUD routes automatically registered in Swagger and routes):
 
 ```bash
 make g:resource name=my_resource
 ```
 
-### Method B: Scaffold a Simple Feature Placeholder
+### Method B: Scaffold a Clean Feature Placeholder
 
-To generate a simple blank feature template with a basic router and auto-registration:
+To generate a clean feature skeleton (empty handler, empty service, empty dto, empty route, registered in features/routes module):
 
 ```bash
 make g:feature name=my_feature
 ```
 
-This generates `src/features/my_feature/{mod.rs, dto.rs, handler.rs, service.rs, router.rs}` and automatically registers it in both `src/features/mod.rs` and `src/routes/mod.rs`. You will only need to manually register any custom types or handlers in Swagger.
+`make g:feature` generates empty shell files (with `#[allow(unused_imports)]` to compile cleanly), while `make g:resource` generates CRUD files using mock placeholder data so it compiles out-of-the-box without needing any database tables or SeaORM models first. Both commands automatically wire up the routes to `src/features/mod.rs` and `src/routes/mod.rs`. `make g:resource` also registers schemas and paths in `src/routes/swagger.rs`.
+
 
 ### Swagger Registration (if using custom endpoints or schemas)
 
