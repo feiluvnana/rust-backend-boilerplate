@@ -8,7 +8,6 @@ use tower_http::trace::TraceLayer;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-pub mod health;
 pub mod swagger;
 
 #[derive(Clone)]
@@ -37,7 +36,7 @@ pub fn create_router(state: AppState) -> Router {
         .unwrap_or_else(|_| HeaderValue::from_static("*"));
 
     let api_routes = Router::new()
-        .nest("/health", health::router())
+        .nest("/health", crate::features::health::router::router())
         .layer(from_fn(request_id_middleware));
 
     // Security headers (nosniff, DENY, 1; mode=block)

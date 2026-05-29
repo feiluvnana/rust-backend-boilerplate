@@ -25,7 +25,7 @@ pub fn generate(feature_name: &str) {
     }
 
     // Write mod.rs
-    let mod_content = "pub mod dto;\npub mod handler;\npub mod service;\n";
+    let mod_content = "pub mod dto;\npub mod handler;\npub mod router;\npub mod service;\n";
     let _ = write_file(&target_dir.join("mod.rs"), mod_content);
 
     // Write dto.rs
@@ -283,30 +283,29 @@ pub async fn delete(
     );
     let _ = write_file(&target_dir.join("handler.rs"), &handler_content);
 
-    // Write src/routes/{name}.rs
-    let routes_file_path = format!("src/routes/{}.rs", feature_name);
+    // Write router.rs
     let routes_content = format!(
         r#"use axum::{{
     routing::get,
     Router,
 }};
 
-use crate::{{features::{SnakeName}::handler as {SnakeName}_handler, routes::AppState}};
+use crate::routes::AppState;
+use super::handler as handler;
 
 pub fn router() -> Router<AppState> {{
     Router::new()
-        .route("/", get({SnakeName}_handler::list).post({SnakeName}_handler::create))
+        .route("/", get(handler::list).post(handler::create))
         .route(
             "/{{id}}",
-            get({SnakeName}_handler::get_by_id)
-                .put({SnakeName}_handler::update)
-                .delete({SnakeName}_handler::delete),
+            get(handler::get_by_id)
+                .put(handler::update)
+                .delete(handler::delete),
         )
 }}
-"#,
-        SnakeName = feature_name
+"#
     );
-    let _ = write_file(Path::new(&routes_file_path), &routes_content);
+    let _ = write_file(&target_dir.join("router.rs"), &routes_content);
 
     register_feature_in_mod(feature_name);
     register_routes_in_mod(feature_name, &kebab_case);

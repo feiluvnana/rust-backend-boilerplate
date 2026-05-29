@@ -29,8 +29,11 @@ Cargo workspace with three members:
 │   ├── main.rs          # Config → DB → Router → serve with graceful shutdown
 │   ├── lib.rs           # Re-exports features, infra, middleware, routes, db (mapped path)
 │   ├── extractors/      # Custom Axum extractors (ValidatedJson, ValidatedQuery, ValidatedPath, etc.)
-│   ├── features/        # Domain modules (handler + service + dto pattern)
+│   ├── features/        # Domain modules (handler + service + dto + router pattern)
 │   │   └── health/
+│   │       ├── mod.rs
+│   │       ├── handler.rs
+│   │       └── router.rs
 │   ├── infra/
 │   │   ├── config.rs    # Config with automatic DATABASE_URL resolution
 │   │   ├── error.rs     # AppError enum → IntoResponse + From<DbErr>
@@ -39,7 +42,6 @@ Cargo workspace with three members:
 │   │   └── request_id.rs# x-request-id propagation with tracing span
 │   └── routes/
 │       ├── mod.rs       # AppState + create_router() + FromRef impls
-│       ├── health.rs    # Route wiring for health feature
 │       └── swagger.rs   # utoipa OpenApi derive (ApiDoc)
 ```
 
@@ -55,38 +57,18 @@ make g:resource name=my_resource
 
 ### Method B: Scaffold a Simple Feature Placeholder
 
-To generate a simple blank feature template:
+To generate a simple blank feature template with a basic router and auto-registration:
 
 ```bash
 make g:feature name=my_feature
 ```
 
-This generates `src/features/my_feature/{mod.rs, dto.rs, handler.rs, service.rs}` and registers it in `src/features/mod.rs`. You will need to manually wire routes and Swagger.
+This generates `src/features/my_feature/{mod.rs, dto.rs, handler.rs, service.rs, router.rs}` and automatically registers it in both `src/features/mod.rs` and `src/routes/mod.rs`. You will only need to manually register any custom types or handlers in Swagger.
 
-### Manual Steps (only for simple features generated with `g:feature`)
+### Swagger Registration (if using custom endpoints or schemas)
 
-#### Step 1: Create Route File
+Add handler paths to `paths(...)` and DTO schemas to `components(schemas(...))` in the `#[openapi(...)]` attribute on `ApiDoc` inside `src/routes/swagger.rs`.
 
-Create `src/routes/my_feature.rs`:
-
-```rust
-use axum::{routing::get, Router};
-use crate::{features::my_feature::handler as my_feature_handler, routes::AppState};
-
-pub fn router() -> Router<AppState> {
-    Router::new()
-        .route("/", get(my_feature_handler::list).post(my_feature_handler::create))
-        .route("/{id}", get(my_feature_handler::get_by_id))
-}
-```
-
-#### Step 2: Register in `src/routes/mod.rs`
-
-Add `pub mod my_feature;` and `.nest("/my-feature", my_feature::router())` inside `create_router()`.
-
-#### Step 3: Register in `src/routes/swagger.rs`
-
-Add handler paths to `paths(...)` and DTO schemas to `components(schemas(...))` in the `#[openapi(...)]` attribute on `ApiDoc`.
 
 ## Canonical Code Patterns
 

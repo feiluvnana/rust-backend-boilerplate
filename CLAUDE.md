@@ -21,7 +21,7 @@ This is a **Cargo workspace** with three members:
 │   │   └── setup.rs       # connect_db(url, max, min) → DatabaseConnection
 │   ├── extractors/         # Custom Axum extractors (ValidatedJson, custom extractors)
 │   ├── features/          # Business logic grouped by domain
-│   │   └── health/        # Example: handler.rs (with utoipa annotations)
+│   │   └── health/        # Example: handler.rs, router.rs (with utoipa annotations)
 │   ├── infra/             # Cross-cutting infrastructure
 │   │   ├── config.rs      # Config struct from env vars (dotenvy)
 │   │   ├── error.rs       # AppError enum → IntoResponse, From<DbErr>
@@ -30,7 +30,6 @@ This is a **Cargo workspace** with three members:
 │   │   └── request_id.rs  # x-request-id propagation + tracing span
 │   └── routes/            # Axum router assembly
 │       ├── mod.rs          # AppState, create_router(), FromRef impls
-│       ├── health.rs       # Route definitions for /health
 │       └── swagger.rs      # utoipa OpenApi derive with ApiDoc
 ```
 
@@ -42,7 +41,7 @@ Use the generator:
 - **Full CRUD Resource**: `make g:resource name=my_resource` (or `cargo run -p g -- resource my_resource`)
   This scaffolds a database-backed CRUD resource (DTOs, handlers, services, and routes) and automatically registers them in routing and Swagger.
 - **Simple Feature Placeholder**: `make g:feature name=my_feature` (or `cargo run -p g -- feature my_feature`)
-  This creates `src/features/my_feature/{mod.rs, dto.rs, handler.rs, service.rs}` and registers it in `src/features/mod.rs`. You must register routing manually.
+  This creates `src/features/my_feature/{mod.rs, dto.rs, handler.rs, service.rs, router.rs}` and automatically registers it in routing and the feature listing.
 - **HTTP Middleware**: `make g:middleware name=my_middleware` (or `cargo run -p g -- middleware my_middleware`)
   This creates `src/middleware/my_middleware.rs` and registers it in `src/middleware/mod.rs`.
 - **Custom Extractor**: `make g:extractor name=my_extractor` (or `cargo run -p g -- extractor my_extractor`)
@@ -140,16 +139,17 @@ pub async fn list(
 
 ### Route Definitions
 
-Each feature has a route file in `src/routes/` returning `Router<AppState>`:
+Each feature has a router file in `src/features/my_feature/router.rs` returning `Router<AppState>`:
 
 ```rust
 use axum::{routing::{get, post}, Router};
-use crate::{features::my_feature::handler as my_handler, routes::AppState};
+use crate::routes::AppState;
+use super::handler as handler;
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/", get(my_handler::list).post(my_handler::create))
-        .route("/{id}", get(my_handler::get_by_id))
+        .route("/", get(handler::list).post(handler::create))
+        .route("/{id}", get(handler::get_by_id))
 }
 ```
 

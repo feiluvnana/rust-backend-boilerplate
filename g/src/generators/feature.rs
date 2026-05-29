@@ -2,6 +2,7 @@ use std::fs;
 use std::path::Path;
 
 use crate::registrars::features::register_feature_in_mod;
+use crate::registrars::routes::register_routes_in_mod;
 use crate::utils::{to_camel_case, to_kebab_case, write_file};
 
 pub fn generate(feature_name: &str) {
@@ -23,7 +24,7 @@ pub fn generate(feature_name: &str) {
     }
 
     // Write mod.rs
-    let mod_content = "pub mod dto;\npub mod handler;\npub mod service;\n";
+    let mod_content = "pub mod dto;\npub mod handler;\npub mod router;\npub mod service;\n";
     let _ = write_file(&target_dir.join("mod.rs"), mod_content);
 
     // Write dto.rs
@@ -113,7 +114,26 @@ impl {CamelName}Service {{
     );
     let _ = write_file(&target_dir.join("service.rs"), &service_content);
 
+    // Write router.rs
+    let routes_content = format!(
+        r#"use axum::{{
+    routing::post,
+    Router,
+}};
+
+use crate::routes::AppState;
+use super::handler as handler;
+
+pub fn router() -> Router<AppState> {{
+    Router::new()
+        .route("/", post(handler::create))
+}}
+"#
+    );
+    let _ = write_file(&target_dir.join("router.rs"), &routes_content);
+
     register_feature_in_mod(feature_name);
+    register_routes_in_mod(feature_name, &kebab_case);
 
     println!("Feature '{}' generated successfully!", feature_name);
 }
