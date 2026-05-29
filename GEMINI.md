@@ -28,12 +28,12 @@ Cargo workspace with three members:
 ├── src/
 │   ├── main.rs          # Config → DB → Router → serve with graceful shutdown
 │   ├── lib.rs           # Re-exports features, infra, middleware, routes, db (mapped path)
+│   ├── extractors/      # Custom Axum extractors (ValidatedJson, ValidatedQuery, ValidatedPath, etc.)
 │   ├── features/        # Domain modules (handler + service + dto pattern)
 │   │   └── health/
 │   ├── infra/
 │   │   ├── config.rs    # Config with automatic DATABASE_URL resolution
 │   │   ├── error.rs     # AppError enum → IntoResponse + From<DbErr>
-│   │   ├── extractor.rs # ValidatedJson, ValidatedQuery, and ValidatedPath Axum extractors
 │   │   └── pagination.rs# PaginationParams + PaginatedResponse<T>
 │   ├── middleware/
 │   │   └── request_id.rs# x-request-id propagation with tracing span
@@ -201,10 +201,12 @@ Implement `FromRef<AppState>` for new state types in `src/routes/mod.rs`.
 | `make ci` | Full CI pipeline (fmt + lint) |
 | `make db:up` | Run pending migrations |
 | `make db:down` | Rollback last migration |
-| `make db:migration name=xxx` | Generate a new migration script |
-| `make db:entity` | Auto-generate/update database models/entities |
+| `make g:migration name=xxx` | Generate a new migration script |
+| `make g:entity` | Auto-generate/update database models/entities |
 | `make g:feature name=xxx` | Scaffold a new feature module |
 | `make g:resource name=xxx` | Scaffold a NestJS-like CRUD resource module |
+| `make g:middleware name=xxx` | Scaffold a new HTTP middleware |
+| `make g:extractor name=xxx` | Scaffold a new custom Axum extractor |
 | `make docker:up` | Start app + postgres |
 
 ## Rules

@@ -50,11 +50,11 @@ db\:up: ## Run database migrations via sea-orm-cli
 db\:down: ## Rollback the last migration via sea-orm-cli
 	sea-orm-cli migrate -d db/migrations down
 
-db\:migration: ## Create a new migration (usage: make db:migration name=xxx)
-	@if [ -z "$(name)" ]; then echo "Error: name is required. Usage: make db:migration name=xxx"; exit 1; fi
+g\:migration: ## Create a new migration (usage: make g:migration name=xxx)
+	@if [ -z "$(name)" ]; then echo "Error: name is required. Usage: make g:migration name=xxx"; exit 1; fi
 	sea-orm-cli migrate -d db/migrations generate $(name)
 
-db\:entity: ## Generate entity models from database
+g\:entity: ## Generate entity models from database
 	@set -a && [ -f .env ] && . ./.env || true && set +a && \
 	DATABASE_URL=$${DATABASE_URL:-postgres://$$POSTGRES_USER:$$POSTGRES_PASSWORD@$$POSTGRES_HOST:$$POSTGRES_PORT/$$POSTGRES_DB}; \
 	echo "Generating entities from $$DATABASE_URL..."; \
@@ -72,3 +72,12 @@ g\:feature: ## Generate a new feature module (usage: make g:feature name=xxx)
 g\:resource: ## Generate a NestJS-like CRUD resource (usage: make g:resource name=xxx)
 	@if [ -z "$(name)" ]; then echo "Error: name is required. Usage: make g:resource name=xxx"; exit 1; fi
 	cargo run -p g -- resource $(name)
+
+g\:middleware: ## Generate a custom middleware (usage: make g:middleware name=xxx)
+	@if [ -z "$(name)" ]; then echo "Error: name is required. Usage: make g:middleware name=xxx"; exit 1; fi
+	cargo run -p g -- middleware $(name)
+
+g\:extractor: ## Generate a custom extractor (usage: make g:extractor name=xxx)
+	@if [ -z "$(name)" ]; then echo "Error: name is required. Usage: make g:extractor name=xxx"; exit 1; fi
+	cargo run -p g -- extractor $(name)
+

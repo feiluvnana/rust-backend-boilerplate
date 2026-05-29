@@ -19,12 +19,12 @@ This is a **Cargo workspace** with three members:
 │   ├── lib.rs             # Re-exports all modules
 │   ├── db/                # Database connection setup
 │   │   └── setup.rs       # connect_db(url, max, min) → DatabaseConnection
+│   ├── extractors/         # Custom Axum extractors (ValidatedJson, custom extractors)
 │   ├── features/          # Business logic grouped by domain
 │   │   └── health/        # Example: handler.rs (with utoipa annotations)
 │   ├── infra/             # Cross-cutting infrastructure
 │   │   ├── config.rs      # Config struct from env vars (dotenvy)
 │   │   ├── error.rs       # AppError enum → IntoResponse, From<DbErr>
-│   │   ├── extractor.rs   # ValidatedJson<T> custom extractor
 │   │   └── pagination.rs  # PaginationParams, PaginatedResponse<T>
 │   ├── middleware/         # HTTP middleware
 │   │   └── request_id.rs  # x-request-id propagation + tracing span
@@ -36,13 +36,17 @@ This is a **Cargo workspace** with three members:
 
 ## Key Patterns — FOLLOW THESE
 
-### Adding a New Feature or CRUD Resource
+### Adding a New Feature, Resource, Middleware, or Extractor
 
 Use the generator:
 - **Full CRUD Resource**: `make g:resource name=my_resource` (or `cargo run -p g -- resource my_resource`)
   This scaffolds a database-backed CRUD resource (DTOs, handlers, services, and routes) and automatically registers them in routing and Swagger.
 - **Simple Feature Placeholder**: `make g:feature name=my_feature` (or `cargo run -p g -- feature my_feature`)
   This creates `src/features/my_feature/{mod.rs, dto.rs, handler.rs, service.rs}` and registers it in `src/features/mod.rs`. You must register routing manually.
+- **HTTP Middleware**: `make g:middleware name=my_middleware` (or `cargo run -p g -- middleware my_middleware`)
+  This creates `src/middleware/my_middleware.rs` and registers it in `src/middleware/mod.rs`.
+- **Custom Extractor**: `make g:extractor name=my_extractor` (or `cargo run -p g -- extractor my_extractor`)
+  This creates `src/extractors/my_extractor.rs` and registers/re-exports it in `src/extractors/mod.rs`.
 
 ### Handler Pattern
 
@@ -71,7 +75,7 @@ pub async fn get_thing(
 
 ### Validated Input
 
-Use `ValidatedJson<T>` (from `infra::extractor`) for request bodies that need validation. The DTO struct must derive `Validate` from the `validator` crate:
+Use `ValidatedJson<T>` (from `extractors`) for request bodies that need validation. The DTO struct must derive `Validate` from the `validator` crate:
 
 ```rust
 #[derive(Debug, Deserialize, Validate, ToSchema, Clone)]
@@ -192,11 +196,15 @@ All configuration comes from environment variables loaded via `dotenvy`. Add new
 | `make fmt` | Format code |
 | `make lint` | Clippy with `-D warnings` |
 | `make ci` | Full CI: fmt check → clippy |
+| `make g:migration name=xxx` | Generate a new migration script |
+| `make g:entity` | Auto-generate/update database models/entities |
 | `make db:up` | Run pending migrations |
 | `make db:down` | Rollback last migration |
 | `make g:env` | Copy `.env.example` → `.env` |
 | `make g:feature name=xxx` | Scaffold a new feature module |
 | `make g:resource name=xxx` | Scaffold a NestJS-like CRUD resource module |
+| `make g:middleware name=xxx` | Scaffold a new HTTP middleware |
+| `make g:extractor name=xxx` | Scaffold a new custom Axum extractor |
 | `make docker:up` | Start app + postgres via docker-compose |
 
 ## Critical Rules
