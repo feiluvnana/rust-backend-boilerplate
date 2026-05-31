@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A minimal, production-ready Rust backend boilerplate built with **Axum + SeaORM + PostgreSQL**. It provides infrastructure scaffolding (error handling, config, validation, pagination, middleware, Swagger) without opinionated business logic. The `examples/user_auth_reference/` directory contains a full auth/user feature implementation that can be copied back in as a starting point.
+A minimal, production-ready Rust backend boilerplate built with **Axum + SeaORM**. It provides infrastructure scaffolding (error handling, config, validation, pagination, middleware, Swagger) without opinionated business logic. The `examples/user_auth_reference/` directory contains a full auth/user feature implementation that can be copied back in as a starting point.
 
 ## Workspace Structure
 
@@ -206,7 +206,7 @@ All configuration comes from environment variables loaded via `dotenvy`. Add new
 | `make g:resource name=xxx` | Scaffold a NestJS-like CRUD resource module |
 | `make g:middleware name=xxx` | Scaffold a new HTTP middleware |
 | `make g:extractor name=xxx` | Scaffold a new custom Axum extractor |
-| `make docker:up` | Start app + postgres via docker-compose |
+| `make docker:up` | Start application container via docker-compose |
 
 ## Critical Rules
 

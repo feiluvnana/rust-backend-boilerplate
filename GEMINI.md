@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A minimal, production-ready Rust backend boilerplate: **Axum + SeaORM + PostgreSQL**.
+A minimal, production-ready Rust backend boilerplate: **Axum + SeaORM**.
 Provides infrastructure scaffolding only — no opinionated business logic ships by default.
 
 ## Workspace Layout
@@ -190,7 +190,7 @@ Implement `FromRef<AppState>` for new state types in `src/routes/mod.rs`.
 | `make g:resource name=xxx` | Scaffold a NestJS-like CRUD resource module |
 | `make g:middleware name=xxx` | Scaffold a new HTTP middleware |
 | `make g:extractor name=xxx` | Scaffold a new custom Axum extractor |
-| `make docker:up` | Start app + postgres |
+| `make docker:up` | Start the application container |
 
 ## Rules
 

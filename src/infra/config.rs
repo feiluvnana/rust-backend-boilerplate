@@ -20,22 +20,8 @@ impl Config {
     pub fn init() -> Result<Self, Box<dyn Error>> {
         dotenvy::dotenv().ok();
 
-        let database_url = match env::var("DATABASE_URL") {
-            Ok(url) => url,
-            Err(_) => {
-                let postgres_user = env_or("POSTGRES_USER", "postgres");
-                let postgres_password = env_or("POSTGRES_PASSWORD", "password");
-                let postgres_db = env_or("POSTGRES_DB", "backend_db");
-                let postgres_host = env_or("POSTGRES_HOST", "localhost");
-                let postgres_port = env_or("POSTGRES_PORT", "5432")
-                    .parse::<u16>()
-                    .map_err(|e| format!("POSTGRES_PORT must be a valid u16: {e}"))?;
-                format!(
-                    "postgres://{}:{}@{}:{}/{}",
-                    postgres_user, postgres_password, postgres_host, postgres_port, postgres_db
-                )
-            }
-        };
+        let database_url = env::var("DATABASE_URL")
+            .map_err(|_| "DATABASE_URL environment variable must be set")?;
 
         let cors_origin = env_or("CORS_ORIGIN", "*");
         let host = env_or("HOST", "0.0.0.0");

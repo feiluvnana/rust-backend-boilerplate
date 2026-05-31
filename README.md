@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/YOUR_USERNAME/rust-backend-boilerplate/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/rust-backend-boilerplate/actions/workflows/ci.yml)
 
-A minimal, production-ready Rust backend boilerplate built with **Axum**, **SeaORM**, and **PostgreSQL**.
+A minimal, production-ready Rust backend boilerplate built with **Axum** and **SeaORM**.
 
 Ships only infrastructure scaffolding — no opinionated business logic. Add your own features on top of a clean foundation.
 
@@ -11,7 +11,7 @@ Ships only infrastructure scaffolding — no opinionated business logic. Add you
 | Category | What you get |
 |---|---|
 | **Web Framework** | [Axum](https://github.com/tokio-rs/axum) with typed extractors and layered middleware |
-| **Database** | [SeaORM](https://github.com/SeaQL/sea-orm) + PostgreSQL with connection pooling and migrations |
+| **Database** | [SeaORM](https://github.com/SeaQL/sea-orm) with connection pooling and migrations |
 | **Validation** | `ValidatedJson<T>` custom extractor using [validator](https://github.com/Keats/validator) |
 | **Error Handling** | Structured `AppError` → JSON responses with auto PG error code mapping |
 | **Pagination** | Built-in `PaginatedResponse<T>` with page/per_page query params |
@@ -28,7 +28,7 @@ Ships only infrastructure scaffolding — no opinionated business logic. Add you
 ### Prerequisites
 
 - [Rust](https://rustup.rs/) (stable)
-- [PostgreSQL](https://www.postgresql.org/) (or Docker)
+- A database server compatible with SeaORM (e.g., PostgreSQL)
 - [cargo-watch](https://github.com/watchexec/cargo-watch) (`cargo install cargo-watch`)
 
 ### 1. Clone & configure
@@ -42,7 +42,7 @@ make g:env          # creates .env from .env.example
 ### 2. Start the database
 
 ```bash
-make docker:up      # starts PostgreSQL via docker-compose
+make docker:up      # starts the application container via docker-compose
 ```
 
 ### 3. Run migrations & start the server
@@ -81,7 +81,7 @@ Open **http://localhost:3000/swagger-ui** to explore the API.
 │   └── migrations/             # SeaORM migrations crate
 ├── g/                          # Feature scaffolding CLI
 ├── Dockerfile                  # Multi-stage production build
-├── docker-compose.yml          # App + PostgreSQL
+├── docker-compose.yml          # Docker Compose configurations
 └── Makefile                    # Developer commands
 ```
 
@@ -147,7 +147,7 @@ Run `make help` to see all available commands.
 | `make db:down` | Rollback last migration |
 | `make g:env` | Generate `.env` from `.env.example` |
 | `make g:feature name=xxx` | Scaffold a new feature module |
-| `make docker:up` | Start app + PostgreSQL containers |
+| `make docker:up` | Start the application container |
 | `make docker:down` | Stop containers and remove volumes |
 | `make docker:build` | Build the Docker image |
 | `make docker:logs` | Tail container logs |
@@ -158,11 +158,7 @@ All configuration is read from environment variables (loaded from `.env` via [do
 
 | Variable | Default | Description |
 |---|---|---|
-| `POSTGRES_USER` | `postgres` | Database user |
-| `POSTGRES_PASSWORD` | `password` | Database password |
-| `POSTGRES_DB` | `backend_db` | Database name |
-| `POSTGRES_HOST` | `localhost` | Database host |
-| `POSTGRES_PORT` | `5432` | Database port |
+| `DATABASE_URL` | `sqlite://db.sqlite` | Database connection URL |
 | `HOST` | `0.0.0.0` | Server bind address |
 | `PORT` | `3000` | Server port |
 | `CORS_ORIGIN` | `*` | Allowed CORS origin |
@@ -217,7 +213,7 @@ Build and run with Docker Compose:
 
 ```bash
 make docker:build   # build the image
-make docker:up      # start app + postgres
+make docker:up      # start application container
 make docker:logs    # watch logs
 ```
 
