@@ -1,56 +1,61 @@
-# CLAUDE.md — Project Intelligence for rust-backend-boilerplate
+# CLAUDE.md — rust-backend-boilerplate
 
-## Project Overview
+## Overview
 
-A minimal, production-ready Rust backend boilerplate built with **Axum + SeaORM**. It provides infrastructure scaffolding (error handling, config, validation, pagination, middleware, Swagger) without opinionated business logic. The `examples/user_auth_reference/` directory contains a full auth/user feature implementation that can be copied back in as a starting point.
+Minimal Rust backend: **Axum + SeaORM + SQLite**.
+Infrastructure scaffolding only — no business logic ships.
 
-## Workspace Structure
+## Structure
 
-This is a **Cargo workspace** with three members:
+2-crate workspace:
 
 ```
-.                          # Main app (axum server)
-├── migration/             # SeaORM migration runner (separate crate)
-├── g/                     # Feature scaffolding CLI tool (separate crate)
-├── examples/              # Reference implementations (not compiled)
-│   └── user_auth_reference/
+.                              # Main app (Axum server)
+├── database/
+│   ├── mod.rs                 # Re-exports models + setup
+│   ├── setup.rs               # connect_db(url, max, min) → DatabaseConnection
+│   ├── models/
+│   │   └── mod.rs             # Auto-generated SeaORM entities (empty initially)
+│   └── migrations/            # SeaORM migration crate
+│       └── src/
+│           ├── lib.rs         # Migrator struct
+│           └── main.rs        # dotenvy + run_cli(Migrator)
 ├── src/
-│   ├── main.rs            # Entry point: config → db → router → serve
-│   ├── lib.rs             # Re-exports all modules
-│   ├── db/                # Database connection setup
-│   │   └── setup.rs       # connect_db(url, max, min) → DatabaseConnection
-│   ├── extractors/         # Custom Axum extractors (ValidatedJson, custom extractors)
-│   ├── features/          # Business logic grouped by domain
-│   │   └── health/        # Example: handler.rs, router.rs (with utoipa annotations)
-│   ├── infra/             # Cross-cutting infrastructure
-│   │   ├── config.rs      # Config struct from env vars (dotenvy)
-│   │   ├── error.rs       # AppError enum → IntoResponse, From<DbErr>
-│   │   └── pagination.rs  # PaginationParams, PaginatedResponse<T>
-│   ├── middleware/         # HTTP middleware
-│   │   └── request_id.rs  # x-request-id propagation + tracing span
-│   └── routes/            # Axum router assembly
-│       ├── mod.rs          # AppState, create_router(), FromRef impls
-│       └── swagger.rs      # utoipa OpenApi derive with ApiDoc
+│   ├── main.rs                # Config → DB → Router → serve + graceful shutdown
+│   ├── lib.rs                 # Re-exports all modules (database via path-mapping)
+│   ├── extractors/            # ValidatedJson, ValidatedPath, ValidatedQuery
+│   ├── features/              # Domain modules (handler → service → repository)
+│   │   └── health/            # handler.rs, service.rs, repository.rs
+│   ├── infra/
+│   │   ├── config.rs          # Config struct from env (dotenvy)
+│   │   └── routes.rs          # AppState + create_router() + ApiDoc (utoipa) + FromRef
+│   ├── middleware/
+│   │   └── mod.rs             # request_id_middleware (x-request-id + tracing span)
+│   └── types/
+│       ├── error.rs           # AppError → IntoResponse + From<DbErr> + From<ValidationErrors>
+│       └── pagination.rs      # PaginationParams + PaginatedResponse<T>
+├── Makefile                   # CLI automation
+├── Dockerfile                 # Multi-stage Docker build
+└── docker-compose.yml         # Single service setup
 ```
 
-## Key Patterns — FOLLOW THESE
+## Key Patterns
 
-### Adding a New Feature, Resource, Middleware, or Extractor
+### Add New Feature
 
-Use the generator:
-- **Clean Resource**: `make g:resource name=my_resource` (or `cargo run -p g -- resource my_resource`)
-  This scaffolds a NestJS-like CRUD resource (with placeholder service returning mock DTO responses, CRUD handlers, and CRUD routes automatically registered in Swagger and routes).
-- **Clean Feature**: `make g:feature name=my_feature` (or `cargo run -p g -- feature my_feature`)
-  This creates `src/features/my_feature/{mod.rs, dto.rs, handler.rs, service.rs, router.rs}` as empty shells and automatically registers them in routes and the features mod.
+1. Create `src/features/my_feature/` with:
+   - `mod.rs` — exports handler, service, repository; re-exports `router()`
+   - `handler.rs` — handlers + DTO structs + `pub fn router() -> Router<AppState>`
+   - `service.rs` — business logic (unit struct, async methods, calls repository)
+   - `repository.rs` — raw DB access (unit struct, returns `Result<T, DbErr>`)
 
-- **HTTP Middleware**: `make g:middleware name=my_middleware` (or `cargo run -p g -- middleware my_middleware`)
-  This creates `src/middleware/my_middleware.rs` and registers it in `src/middleware/mod.rs`.
-- **Custom Extractor**: `make g:extractor name=my_extractor` (or `cargo run -p g -- extractor my_extractor`)
-  This creates `src/extractors/my_extractor.rs` and registers/re-exports it in `src/extractors/mod.rs`.
+2. Register `pub mod my_feature;` in `src/features/mod.rs`
 
-### Handler Pattern
+3. Mount `.nest("/my-feature", crate::features::my_feature::router())` in `src/infra/routes.rs`
 
-Handlers are async functions that return `Result<(StatusCode, Json<T>), AppError>`:
+4. Register paths + schemas in `#[openapi(...)]` on `ApiDoc` in `src/infra/routes.rs`
+
+### Handler
 
 ```rust
 #[utoipa::path(
@@ -73,9 +78,19 @@ pub async fn get_thing(
 }
 ```
 
-### Validated Input
+### Router (inside handler.rs, not separate file)
 
-Use `ValidatedJson<T>` (from `extractors`) for request bodies that need validation. The DTO struct must derive `Validate` from the `validator` crate:
+```rust
+pub fn router() -> Router<AppState> {
+    Router::new()
+        .route("/", get(list).post(create))
+        .route("/{id}", get(get_by_id))
+}
+```
+
+### Validation
+
+`ValidatedJson<T>` for bodies. DTO derives `Validate`:
 
 ```rust
 #[derive(Debug, Deserialize, Validate, ToSchema, Clone)]
@@ -90,40 +105,50 @@ pub async fn create(
 ) -> Result<(StatusCode, Json<ThingResponse>), AppError> { ... }
 ```
 
+Also: `ValidatedPath<T>`, `ValidatedQuery<T>`.
+
 ### Error Handling
 
-All errors go through `AppError` (in `src/infra/error.rs`). It implements `IntoResponse` and auto-converts from `sea_orm::DbErr` and `validator::ValidationErrors`. Use the existing variants:
+`AppError` in `src/types/error.rs`. Variants:
 
-- `AppError::BadRequest(msg)` → 400
-- `AppError::Unauthorized(msg)` → 401
-- `AppError::Forbidden(msg)` → 403
-- `AppError::NotFound(msg)` → 404
-- `AppError::Conflict(msg)` → 409
-- `AppError::ValidationError(errors)` → 422
-- `AppError::Internal(msg)` → 500
+- `BadRequest(msg)` → 400
+- `Unauthorized(msg)` → 401
+- `Forbidden(msg)` → 403
+- `NotFound(msg)` → 404
+- `Conflict(msg)` → 409
+- `ValidationError(errors)` → 422
+- `Internal(msg)` → 500
+- `ServiceUnavailable(msg)` → 503
 
-The `?` operator on `sea_orm::DbErr` automatically maps unique constraint violations (PG 23505) to `Conflict` and foreign key violations (PG 23503) to `BadRequest`.
+`From<DbErr>`: unique violation → `Conflict`, FK violation → `BadRequest`, `RecordNotFound` → `NotFound`, rest → `Internal`.
 
-### Service Pattern
-
-Services are unit structs with associated async methods. They take `&DatabaseConnection` as the first argument and return `Result<T, sea_orm::DbErr>`:
+### Service (calls repository, business logic)
 
 ```rust
 pub struct ThingService;
 
 impl ThingService {
-    pub async fn find_by_id(
-        db: &DatabaseConnection,
-        id: i32,
-    ) -> Result<Option<thing::Model>, sea_orm::DbErr> {
+    pub async fn find_by_id(db: &DatabaseConnection, id: i32) -> Result<Option<thing::Model>, AppError> {
+        ThingRepository::find_by_id(db, id)
+            .await
+            .map_err(|e| AppError::Internal(e.to_string()))
+    }
+}
+```
+
+### Repository (raw DB, returns `Result<T, DbErr>`)
+
+```rust
+pub struct ThingRepository;
+
+impl ThingRepository {
+    pub async fn find_by_id(db: &DatabaseConnection, id: i32) -> Result<Option<thing::Model>, sea_orm::DbErr> {
         thing::Entity::find_by_id(id).one(db).await
     }
 }
 ```
 
 ### Pagination
-
-Use `PaginationParams` from query string and return `PaginatedResponse<T>`:
 
 ```rust
 pub async fn list(
@@ -138,84 +163,58 @@ pub async fn list(
 }
 ```
 
-### Route Definitions
+### SeaORM Entity
 
-Each feature has a router file in `src/features/my_feature/router.rs` returning `Router<AppState>`:
-
-```rust
-use axum::{routing::{get, post}, Router};
-use crate::routes::AppState;
-use super::handler as handler;
-
-pub fn router() -> Router<AppState> {
-    Router::new()
-        .route("/", get(handler::list).post(handler::create))
-        .route("/{id}", get(handler::get_by_id))
-}
-```
-
-### Database Models (SeaORM entities)
-
-Define in `src/db/models/`. Each model file uses `DeriveEntityModel`:
+Place in `database/models/`. Auto-generate: `make db:entity`.
 
 ```rust
-use sea_orm::entity::prelude::*;
-use serde::{Deserialize, Serialize};
-
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "things")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub name: String,
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, DeriveRelation, EnumIter)]
 pub enum Relation {}
-
 impl ActiveModelBehavior for ActiveModel {}
 ```
 
-Remember to register with `pub mod my_model;` in `src/db/models/mod.rs` (create this if it doesn't exist, and add `pub mod models;` to `src/db/mod.rs`).
+Register `pub mod my_model;` in `database/models/mod.rs`.
 
 ### Config
 
-All configuration comes from environment variables loaded via `dotenvy`. Add new config fields to `Config` struct in `src/infra/config.rs`, read them in `Config::init()`, and add them to `.env.example`.
+Add env vars → `Config` in `src/infra/config.rs` + update `.env.example`.
+New state types → `FromRef<AppState>` in `src/infra/routes.rs`.
 
-### AppState
+### DB Path-Mapping
 
-`AppState` (in `src/routes/mod.rs`) holds `db: DatabaseConnection` and `config: Config`. If you add new fields, implement `FromRef<AppState>` for the new type so handlers can extract it directly with `State(x): State<X>`.
+`database/` lives outside `src/`, included via:
+```rust
+#[path = "../database/mod.rs"]
+pub mod database;
+```
 
 ## Commands
 
 | Command | Purpose |
 |---|---|
 | `make run` | Hot-reload dev server (`cargo watch -x run`) |
-| `make check` | Fast compilation check |
-| `make fmt` | Format code |
-| `make lint` | Clippy with `-D warnings` |
-| `make ci` | Full CI: fmt check → clippy |
-| `make g:migration name=xxx` | Generate a new migration script |
-| `make g:entity` | Auto-generate/update database models/entities |
 | `make db:up` | Run pending migrations |
 | `make db:down` | Rollback last migration |
-| `make g:env` | Copy `.env.example` → `.env` |
-| `make g:feature name=xxx` | Scaffold a new feature module |
-| `make g:resource name=xxx` | Scaffold a NestJS-like CRUD resource module |
-| `make g:middleware name=xxx` | Scaffold a new HTTP middleware |
-| `make g:extractor name=xxx` | Scaffold a new custom Axum extractor |
-| `make docker:up` | Start application container via docker-compose |
+| `make db:migration name=xxx` | Generate new migration |
+| `make db:entity` | Auto-generate entity models from DB |
+| `make env:setup` | Copy `.env.example` → `.env` |
 
-## Critical Rules
+## Rules
 
-1. **Every handler must have `#[utoipa::path(...)]` annotations** for Swagger. Add paths and schemas to `src/routes/swagger.rs` `ApiDoc`.
-2. **Never use `unwrap()` in handler/service code.** Use `?` with `AppError` or `.ok_or_else(|| AppError::...)`.
-3. **Return types are always `Result<(StatusCode, Json<T>), AppError>`** for handlers that return data, or `Result<StatusCode, AppError>` for empty responses.
-4. **Feature names must be `snake_case`**, route URL paths must be `kebab-case`.
-5. **Use `sea_orm::sqlx::Error`** (not direct `sqlx`) when matching database errors — the crate does not have a direct `sqlx` dependency.
-6. **Migrations** go in the `migration/` crate. Add new migration modules to `migration/src/lib.rs`.
-8. **The `g/` crate is a workspace member** — it compiles separately and does not affect main app build times.
-9. **Do NOT add business-specific dependencies to root `Cargo.toml`** unless they're used by the core infrastructure. Feature-specific deps should be evaluated for necessity.
-10. **`examples/user_auth_reference/`** is the canonical reference for how to build auth, JWT, user CRUD, and custom extractors. Consult it when building similar features.
+1. Every handler needs `#[utoipa::path]` — register in `ApiDoc` in `src/infra/routes.rs`.
+2. No `unwrap()` in handlers/services/repos — `?` with `AppError`.
+3. Handler returns: `Result<(StatusCode, Json<T>), AppError>` or `Result<StatusCode, AppError>`.
+4. Feature names `snake_case`, URL paths `kebab-case`.
+5. `sea_orm::sqlx::Error` — no direct sqlx dep.
+6. Architecture: handler → service → repository. Handlers never call repos directly.
+7. Migrations in `database/migrations/` — decoupled compile.
+8. No business deps in root `Cargo.toml` unless core infra needs.
+9. DB module path-mapped from `database/` — don't move into `src/`.

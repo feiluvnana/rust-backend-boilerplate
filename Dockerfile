@@ -8,8 +8,7 @@ ARG APP_NAME
 WORKDIR /app
 RUN apk add --no-cache clang lld musl-dev git curl
 RUN --mount=type=bind,source=src,target=src \
-    --mount=type=bind,source=db,target=db \
-    --mount=type=bind,source=g,target=g \
+    --mount=type=bind,source=database,target=database \
     --mount=type=bind,source=Cargo.toml,target=Cargo.toml \
     --mount=type=bind,source=Cargo.lock,target=Cargo.lock \
     --mount=type=cache,target=/app/target/ \
